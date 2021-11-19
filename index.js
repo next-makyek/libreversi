@@ -6,7 +6,7 @@ var StoneFlipJudger = require('./stoneFlipJudger');
 var RAD_DIRECTIONS = [[1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1]];
 
 function ReversiBoard(size, onUpdate) {
-    if (size % 2 !== 0 || size <= 0) {
+    if (size % 2 !== 1 || size <= 0) {
         throw new Error('invalid size');
     }
     this.size = size;
@@ -30,7 +30,7 @@ ReversiBoard.prototype.clearBoard = function () {
         this.board.push(boardRow);
         this.order.push(orderRow);
     }
-    var beginPos = this.size / 2 - 1;
+    var beginPos = (this.size - 1) / 2 - 1;
     this.board[beginPos][beginPos] = constant.STATE_WHITE;
     this.board[beginPos][beginPos + 1] = constant.STATE_BLACK;
     this.board[beginPos + 1][beginPos] = constant.STATE_BLACK;
@@ -103,28 +103,7 @@ ReversiBoard.prototype.canPlaceAt = function (side, row, col) {
     if (row < 0 || col < 0 || row >= this.size || col >= this.size) {
         return false;
     }
-    if (this.board[row][col] !== constant.STATE_EMPTY) {
-        return false;
-    }
-    var judger = new StoneFlipJudger(side);
-    for (var i = 0; i < RAD_DIRECTIONS.length; i++) {
-        var direction = RAD_DIRECTIONS[i];
-        var cRow = row + direction[0];
-        var cCol = col + direction[1];
-        judger.reset();
-        while (cRow >= 0 && cCol >= 0 && cRow < this.size && cCol < this.size) {
-            var result = judger.next(this.board[cRow][cCol]);
-            if (result === 0) {
-                break;
-            } else if (result > 0) {
-                return true;
-            }
-            // Else: result === -1
-            cRow += direction[0];
-            cCol += direction[1];
-        }
-    }
-    return false;
+    return this.board[row][col] === constant.STATE_EMPTY;
 };
 
 ReversiBoard.prototype._placeAt = function (row, col, side, order) {
@@ -145,35 +124,6 @@ ReversiBoard.prototype.placeAt = function (side, row, col) {
     validation.checkPlayerSide(side);
     this.currentOrder++;
     this._placeAt(row, col, side, this.currentOrder);
-    var judger = new StoneFlipJudger(side);
-    for (var i = 0; i < RAD_DIRECTIONS.length; i++) {
-        var direction = RAD_DIRECTIONS[i];
-        // Pre-walk to see how many stones can be flipped
-        var flipStones = 0;
-        var cRow = row + direction[0];
-        var cCol = col + direction[1];
-        judger.reset();
-        while (cRow >= 0 && cCol >= 0 && cRow < this.size && cCol < this.size) {
-            var result = judger.next(this.board[cRow][cCol]);
-            if (result >= 0) {
-                flipStones = result;
-                break;
-            }
-            cRow += direction[0];
-            cCol += direction[1];
-        }
-        // flip stones
-        if (flipStones > 0) {
-            var cRow = row;
-            var cCol = col;
-            while (flipStones > 0) {
-                cRow += direction[0];
-                cCol += direction[1];
-                this._placeAt(cRow, cCol, side);
-                flipStones--;
-            }
-        }
-    }
 };
 
 /**
