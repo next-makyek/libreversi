@@ -6,7 +6,7 @@ var StoneFlipJudger = require('./stoneFlipJudger');
 var RAD_DIRECTIONS = [[1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1]];
 
 function ReversiBoard(size, onUpdate) {
-    if (size % 2 !== 1 || size <= 0) {
+    if (size % 2 !== 0 || size <= 0) {
         throw new Error('invalid size');
     }
     this.size = size;
@@ -30,7 +30,7 @@ ReversiBoard.prototype.clearBoard = function () {
         this.board.push(boardRow);
         this.order.push(orderRow);
     }
-    var beginPos = (this.size - 1) / 2 - 1;
+    var beginPos = this.size / 2 - 1;
     this.board[beginPos][beginPos] = constant.STATE_WHITE;
     this.board[beginPos][beginPos + 1] = constant.STATE_BLACK;
     this.board[beginPos + 1][beginPos] = constant.STATE_BLACK;
@@ -47,49 +47,11 @@ ReversiBoard.prototype.clearBoard = function () {
  */
 ReversiBoard.prototype.hasAvailablePlacement = function (side) {
     validation.checkPlayerSide(side);
-    var iterations = [
-        // 0         1         2             3             4        5
-        // startRow, startCol, directionRow, directionCol, nextRow, nextCol
-        [0, 0, 0, 1, 1, 0],               // right
-        [0, 0, 1, 0, 0, 1],               // down
-        [0, this.size - 1, 1, 1, 0, -1],  // right-down
-        [1, 0, 1, 1, 1, 0],               // right-down
-        [0, 0, 1, -1, 0, 1],              // left-down
-        [1, this.size - 1, 1, -1, 1, 0],  // left-down
-    ];
-    var judger = new HasPlacementJudger(side);
-    for (var i = 0; i < iterations.length; i++) {
-        var iteration = iterations[i];
-        var row = iteration[0];
-        var col = iteration[1];
-        while (row >= 0 && col >= 0 && row < this.size && col < this.size) {
-            var cRow = row;
-            var cCol = col;
-            // Asc order
-            judger.reset();
-            while (cRow >= 0 && cCol >= 0 && cRow < this.size && cCol < this.size) {
-                var result = judger.next(this.board[cRow][cCol]);
-                if (result) {
-                    return true;
-                }
-                cRow += iteration[2];
-                cCol += iteration[3];
+    for (let i = 0; i < this.size; i++) {
+        for (let j = 0; j < this.size; j++) {
+            if (this.board[i][j] === constant.STATE_EMPTY) {
+                return true;
             }
-            // Desc order
-            cRow -= iteration[2];
-            cCol -= iteration[3];
-            judger.reset();
-            while (cRow >= 0 && cCol >= 0 && cRow < this.size && cCol < this.size) {
-                var result = judger.next(this.board[cRow][cCol]);
-                if (result) {
-                    return true;
-                }
-                cRow -= iteration[2];
-                cCol -= iteration[3];
-            }
-            // Prepare for next iteration
-            row += iteration[4];
-            col += iteration[5];
         }
     }
     return false;
